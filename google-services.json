@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548289716844",
+    "project_id": "catalyst-1c449",
+    "storage_bucket": "catalyst-1c449.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548289716844:android:1881974fedf49f22fa6e49",
+        "android_client_info": {
+          "package_name": "com.ngozi.catalyst"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAH_su7LwCBmT7rxxZ-sfttKtTj53yYatc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
