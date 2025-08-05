@@ -1,30 +1,43 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons'; // For the settings icon
 
-// Import the screens
+// Import all our screens and the new tab navigator
 import LoginScreen from '../screens/LoginScreen';
-import HomeScreen from '../screens/HomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import MainTabNavigator from './MainTabNavigator'; // Our new tab navigator
 
-// This part defines what screens are available in our stack
-// I use TypeScript to make sure we don't try to navigate to a screen that doesn't exist
 export type RootStackParamList = {
-  Login: undefined; // No parameters are needed to go to the Login screen
-  SignUp: undefined; // No parameters are needed to go to the Sign Up screen
-  Home: undefined;  // No parameters are needed to go to the Home screen
+  Login: undefined;
+  SignUp: undefined;
+  Main: undefined; 
+  Settings: undefined;
 };
 
-// Create the stack navigator
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
+        {/* Auth screens have no header */}
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Catalyst' }} />
+        
+        {/* The main app experience is the Tab Navigator */}
+        <Stack.Screen
+          name="Main"
+          component={MainTabNavigator}
+          options={({ navigation }) => ({
+            headerShown: false // We hide the stack's header and let the Tab Navigator manage its own
+          })}
+        />
+
+        {/* The Settings screen is a normal screen we can navigate to */}
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

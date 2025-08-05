@@ -23,7 +23,7 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
       // Use the new syntax for the Web SDK
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('SUCCESS: User account created!', userCredential.user.email);
-      navigation.navigate('Home');
+      navigation.navigate('Main');
 
     } catch (error: any) {
       console.error('FIREBASE ERROR:', error.code, error.message);

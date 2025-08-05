@@ -26,7 +26,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       
       // If successful, log the user info and navigate to the Home screen
       console.log('User logged in!', userCredential.user.email);
-      navigation.navigate('Home');
+      navigation.navigate('Main');
 
     } catch (error: any) {
       console.error('FIREBASE LOGIN ERROR:', error.code, error.message);
