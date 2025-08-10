@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Alert } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 
 const HomeScreen = () => {
   // State for the prompt remains the same.
@@ -95,9 +95,38 @@ const HomeScreen = () => {
   }, [userDisciplines, promptCache]); // We re-run this effect if the user's disciplines change.
 
 
-  // The placeholder for saving prompts remains. We'll implement this in the next phase.
-  const handleSavePrompt = () => {
-    console.log('Saving prompt:', prompt);
+  // This function now saves the current prompt to a 'savedPrompts' sub-collection for the logged-in user.
+  const handleSavePrompt = async () => {
+    // A quick check to make sure the user doesn't save the default initial prompt.
+    if (prompt === 'Shake your device to generate a new idea!') {
+      Alert.alert("Generate a Prompt", "Shake your device to get a prompt before saving.");
+      return;
+    }
+
+    // Gets the currently logged-in user.
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        // Creates a reference to the 'savedPrompts' sub-collection that lives inside the user's document.
+        // The path will look like: /users/{userId}/savedPrompts
+        const savedPromptsColRef = collection(db, 'users', user.uid, 'savedPrompts');
+
+        // Adds a new document to that sub-collection.
+        // Firestore will automatically generate a unique ID for this new prompt document.
+        await addDoc(savedPromptsColRef, {
+          promptText: prompt, // The text of the prompt being saved.
+          createdAt: new Date(), // A timestamp for when it was saved. This is useful for sorting later.
+          note: "" // An empty note field, ready for the user to edit later.
+        });
+
+        // Provides positive feedback to the user.
+        Alert.alert("Saved!", "Your prompt has been saved to your collection.");
+
+      } catch (error) {
+        console.error("Error saving prompt: ", error);
+        Alert.alert("Error", "Could not save the prompt. Please try again.");
+      }
+    }
   };
 
   // Renders the component's UI.
