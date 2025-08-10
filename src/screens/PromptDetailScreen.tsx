@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Button, Alert } from 'react-native';
 import { auth, db } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 // This screen receives the prompt data as a parameter from the navigation.
 const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
@@ -41,10 +41,46 @@ const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any
     }
   };
 
-  // Placeholder function for the Delete logic.
+  // This function deletes the current prompt from Firestore after user confirmation.
   const handleDeletePrompt = () => {
-    console.log(`Deleting prompt ${prompt.id}`);
-    // We will add Firebase logic here in the next step.
+    // Alert.alert shows a native confirmation dialog.
+    // This is a critical step to prevent accidental deletions.
+    Alert.alert(
+      "Delete Prompt", // The title of the alert
+      "Are you sure you want to permanently delete this prompt?", // The message
+      [
+        // The array of buttons.
+        {
+          text: "Cancel",
+          onPress: () => console.log("Delete cancelled"),
+          style: "cancel" // This style gives it a distinct look on iOS.
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            // This async function runs only if the user taps "Delete".
+            const user = auth.currentUser;
+            if (user) {
+              try {
+                // Creates a direct reference to the specific prompt document to be deleted.
+                const promptDocRef = doc(db, 'users', user.uid, 'savedPrompts', prompt.id);
+                // Calls the deleteDoc function from Firestore.
+                await deleteDoc(promptDocRef);
+                
+                // Provides feedback and navigates the user away from the now-deleted item.
+                Alert.alert("Deleted", "The prompt has been successfully deleted.");
+                navigation.goBack();
+
+              } catch (error) {
+                console.error("Error deleting prompt: ", error);
+                Alert.alert("Error", "Could not delete the prompt. Please try again.");
+              }
+            }
+          },
+          style: "destructive" // This styles the button text red on iOS.
+        }
+      ]
+    );
   };
 
   // Checks if the note has been changed from its original value.
