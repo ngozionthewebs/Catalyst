@@ -4,8 +4,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 // Import our auth object and the login function from the firebase SDK
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -13,7 +14,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // This function now handles the actual login process
+  // This function now handles the login process and conditional navigation.
   const handleLogin = async () => {
     if (email === '' || password === '') {
       Alert.alert('Missing Information', 'Please enter both email and password.');
@@ -21,17 +22,36 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
     }
 
     try {
-      // This is the core Firebase function for signing a user in
+      // Step 1: Authenticate the user with Firebase Auth.
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // If successful, log the user info and navigate to the Home screen
-      console.log('User logged in!', userCredential.user.email);
-      navigation.navigate('Main');
+      const user = userCredential.user;
+      console.log('User logged in!', user.email);
+
+      // Step 2: Fetch the user's profile from Firestore.
+      // Creates a reference to the specific document path: /users/{userId}
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      // Step 3: The conditional logic.
+      // Check if the document exists AND if the 'hasCompletedOnboarding' field is true.
+      if (userDoc.exists() && userDoc.data().hasCompletedOnboarding === true) {
+        // If true, the user is a returning user. Go straight to the main app.
+        console.log('Onboarding complete. Navigating to Main.');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        // If false or the document doesn't exist, they are a new user. Start the onboarding flow.
+        console.log('Onboarding not complete. Navigating to Welcome.');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+        });
+      }
 
     } catch (error: any) {
       console.error('FIREBASE LOGIN ERROR:', error.code, error.message);
-      
-      // Provide user-friendly feedback based on the error code
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
       } else {

@@ -23,7 +23,11 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
       // Use the new syntax for the Web SDK
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('SUCCESS: User account created!', userCredential.user.email);
-      navigation.navigate('Main');
+      // On successful sign up, always start the onboarding flow.
+      navigation.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+      });
 
     } catch (error: any) {
       console.error('FIREBASE ERROR:', error.code, error.message);

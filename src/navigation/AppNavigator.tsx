@@ -8,11 +8,17 @@ import { Ionicons } from '@expo/vector-icons'; // For the settings icon
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import MainTabNavigator from './MainTabNavigator'; // Our new tab navigator
+import WelcomeScreen from '../screens/WelcomeScreen'; 
+import DisciplineScreen from '../screens/DisciplineScreen'; 
+import HowItWorksScreen from '../screens/HowItWorksScreen'; 
+import MainTabNavigator from './MainTabNavigator'; 
 
 export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
+  Welcome: undefined; 
+  Discipline: undefined; 
+  HowItWorks: undefined;
   Main: undefined; 
   Settings: undefined;
 };
@@ -26,6 +32,11 @@ const AppNavigator = () => {
         {/* Auth screens have no header */}
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+
+        {/* Onboarding screens also have no header */}
+        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Discipline" component={DisciplineScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="HowItWorks" component={HowItWorksScreen} options={{ headerShown: false }} />
         
         {/* The main app experience is the Tab Navigator */}
         <Stack.Screen
