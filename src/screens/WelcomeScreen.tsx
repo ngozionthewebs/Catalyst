@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 
-// We add { navigation } as a prop so we can use it. 'any' is fine for now.
+// This screen is the first thing users see after signing up or logging in.
 const WelcomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <View style={styles.container}>
