@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, TouchableOpacity } from 'react-native';
+import {
+  View, Text, StyleSheet, TextInput, Alert, TouchableOpacity,
+  ImageBackground, StatusBar, KeyboardAvoidingView, Platform,
+  ScrollView
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
-// Import our auth object and the login function from the firebase SDK
+// Firebase imports
 import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { BlurView } from 'expo-blur'; // Import the BlurView
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -14,44 +19,23 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // This function now handles the login process and conditional navigation.
   const handleLogin = async () => {
     if (email === '' || password === '') {
       Alert.alert('Missing Information', 'Please enter both email and password.');
       return;
     }
-
     try {
-      // Step 1: Authenticate the user with Firebase Auth.
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      console.log('User logged in!', user.email);
-
-      // Step 2: Fetch the user's profile from Firestore.
-      // Creates a reference to the specific document path: /users/{userId}
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      // Step 3: The conditional logic.
-      // Check if the document exists AND if the 'hasCompletedOnboarding' field is true.
       if (userDoc.exists() && userDoc.data().hasCompletedOnboarding === true) {
-        // If true, the user is a returning user. Go straight to the main app.
-        console.log('Onboarding complete. Navigating to Main.');
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else {
-        // If false or the document doesn't exist, they are a new user. Start the onboarding flow.
-        console.log('Onboarding not complete. Navigating to Welcome.');
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Welcome' }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
       }
-
     } catch (error: any) {
-      console.error('FIREBASE LOGIN ERROR:', error.code, error.message);
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
       } else {
@@ -61,84 +45,142 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Catalyst</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+    <ImageBackground
+      source={require('../../assets/images/2.png')} // Use the same background image
+      resizeMode="cover"
+      style={styles.background}
+    >
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContentContainer}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Login</Text>
+            <Text style={styles.subtitle}>
+              Welcome Back 👋🏽, I hope you're ready to step out and create something new
+            </Text>
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+          <View style={styles.formContainer}>
+            {/* Email Input */}
+            <BlurView intensity={50} tint="light" style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="rgba(37, 2, 67, 0.56)"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </BlurView>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.linkContainer}>
-        <Text style={styles.linkText}>Don't have an account? </Text>
-        <Text style={[styles.linkText, styles.link]}>Sign Up</Text>
-      </TouchableOpacity>
-    </View>
+            {/* Password Input */}
+            <BlurView intensity={50} tint="light" style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="rgba(37, 2, 67, 0.56)"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </BlurView>
+          </View>
+
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.signUpLink}>
+              <Text style={styles.signUpLinkText}>Don't Have An Account? </Text>
+              <Text style={[styles.signUpLinkText, styles.signUpLinkTextBold]}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
-// Styles remain the same
+// We use the same style structure, with minor text changes for clarity
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
   },
+  scrollContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  header: {},
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
+    fontFamily: 'Yellowtail',
+    fontSize: 64,
+    color: '#250243',
+    textAlign: 'left',
+  },
+  subtitle: {
+    fontFamily: 'Quicksand-Regular',
+    fontSize: 15,
+    color: '#250243',
+    marginTop: 10,
+    lineHeight: 22,
+    textAlign: 'left',
+  },
+  formContainer: {
+    marginTop: 40,
+  },
+  inputContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 2, 67, 0.35)',
   },
   input: {
     width: '100%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  linkContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
-  },
-  linkText: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  link: {
-    color: '#007BFF',
-    fontWeight: 'bold',
-  },
-  button: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 12,
-    borderRadius: 50,
-    marginTop: 20,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
+    height: 58,
+    paddingHorizontal: 20,
+    fontFamily: 'Quicksand-Regular',
     fontSize: 16,
-    fontWeight: 'bold',
+    color: '#250243',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  loginButton: {
+    backgroundColor: '#7116BC',
+    width: '100%',
+    maxWidth: 340,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loginButtonText: {
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  signUpLink: {
+    flexDirection: 'row',
+  },
+  signUpLinkText: {
+    fontFamily: 'Quicksand-Regular',
+    fontSize: 14,
+    color: '#250243',
+  },
+  signUpLinkTextBold: {
+    fontFamily: 'Quicksand-Bold',
   },
 });
 

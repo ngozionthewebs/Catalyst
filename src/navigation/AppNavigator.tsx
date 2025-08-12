@@ -2,81 +2,79 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Import the auth service from Firebase
 import { auth } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
-// Import all our screens
+// Import all screens
+import SplashScreen from '../screens/SplashScreen'; // The new splash screen
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-import LoadingScreen from '../screens/LoadingScreen'; // Import the new loading screen
+import LoadingScreen from '../screens/LoadingScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import DisciplineScreen from '../screens/DisciplineScreen';
 import HowItWorksScreen from '../screens/HowItWorksScreen';
 import MainTabNavigator from './MainTabNavigator';
-import SettingsScreen from '../screens/SettingsScreen';
 
-// We can re-use this from our other files
+// Define all possible screens
 export type RootStackParamList = {
+  Splash: undefined;
   Login: undefined;
   SignUp: undefined;
-  Loading: undefined; // Add Loading to our param list
   Welcome: undefined;
   Discipline: undefined;
   HowItWorks: undefined;
   Main: undefined;
-  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const AppNavigator = () => {
-  // State to hold the user object if they are logged in.
-  const [user, setUser] = useState<User | null>(null);
-  // State to determine if we are done checking for a user.
-  const [isLoading, setIsLoading] = useState(true);
+// --- Navigator for the Authentication Flow ---
+const AuthStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Discipline" component={DisciplineScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="HowItWorks" component={HowItWorksScreen} options={{ headerShown: false }} />
+  </Stack.Navigator>
+);
 
-  // This useEffect hook is the core of our session persistence.
+// --- Navigator for the Main App Flow ---
+const AppStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
+  </Stack.Navigator>
+);
+
+const AppNavigator = () => {
+  const [user, setUser] = useState<User | null>(null);
+  // This state now tracks the combined loading of fonts AND our minimum splash time.
+  const [isAppReady, setIsAppReady] = useState(false); 
+
   useEffect(() => {
-    // onAuthStateChanged is a real-time listener from Firebase.
-    // It fires once on app startup, and again any time the user logs in or out.
+    // This listener checks for the user's login state.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // If a user is found, we set them in state; otherwise, it's null.
-      setIsLoading(false); // We're done checking, so we can stop showing the loading screen.
+      setUser(user);
     });
 
-    // The cleanup function unsubscribes from the listener when the component unmounts.
+    // We set a timer to ensure the splash screen is visible for at least 3 seconds.
+    setTimeout(() => {
+      setIsAppReady(true); // After 3 seconds, we declare the app "ready".
+    }, 5000); // 3000 milliseconds = 3 seconds
+
+    // Cleanup the auth listener when the component unmounts.
     return unsubscribe;
   }, []);
 
-  // If we are still checking for a user, show the loading screen.
-  if (isLoading) {
-    return <LoadingScreen />;
+  // While the app is NOT ready, show the splash screen.
+  if (!isAppReady) {
+    return <SplashScreen />;
   }
 
+  // Once the app is ready, render the correct navigator.
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {/* We now use conditional rendering to decide which screens to show. */}
-        {user ? (
-          // If a user object exists, they are logged in.
-          // We show only the main app screens.
-          <>
-            <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-          </>
-        ) : (
-          // If there is no user, they are logged out.
-          // We show only the auth and onboarding screens.
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Discipline" component={DisciplineScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="HowItWorks" component={HowItWorksScreen} options={{ headerShown: false }} />
-          </>
-        )}
-      </Stack.Navigator>
+      {user ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
 };

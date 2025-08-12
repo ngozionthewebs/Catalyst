@@ -11,7 +11,7 @@ export default function App() {
       'Quicksand-Light': require('./assets/fonts/Quicksand-Light.ttf'),
       'Quicksand-Regular': require('./assets/fonts/Quicksand-Regular.ttf'),
       'Quicksand-Medium': require('./assets/fonts/Quicksand-Medium.ttf'),
-      'Quicksand-Semibold': require('./assets/fonts/Quicksand-Semibold.ttf'),
+      'Quicksand-Semibold': require('./assets/fonts/Quicksand-SemiBold.ttf'),
       'Quicksand-Bold': require('./assets/fonts/Quicksand-Bold.ttf'),
     });
 
