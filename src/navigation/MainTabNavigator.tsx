@@ -1,6 +1,9 @@
 import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 
 // Import all the screens this navigator will manage
 import HomeScreen from '../screens/HomeScreen';
@@ -8,51 +11,133 @@ import SavedPromptsScreen from '../screens/SavedPromptsScreen';
 import PromptDetailScreen from '../screens/PromptDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-// Define the types for the props for our two new navigators
-// This helps with type safety when navigating
-export type MainTabParamList = {
-  Generate: undefined;
-  Saved: undefined;
-  Settings: undefined;
-};
+// --- Type Definitions (Unchanged) ---
+export type MainTabParamList = { Generate: undefined; Saved: undefined; Settings: undefined; };
+export type MainStackParamList = { Tabs: undefined; PromptDetail: { prompt: any }; };
 
-export type MainStackParamList = {
-  Tabs: undefined; // This route will render our Bottom Tab navigator
-  PromptDetail: { prompt: any }; // This is our detail screen
-};
-
-// Create the navigator instances
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
-// --- This is the component for the Bottom Tabs ---
+// --- START OF NEW CUSTOM TAB BAR COMPONENT ---
+
+const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+  return (
+    <View style={styles.tabBarContainer}>
+      <BlurView intensity={80} tint="light" style={styles.blurView}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          let iconName: keyof typeof Ionicons.glyphMap;
+          let label = options.title || route.name;
+
+          if (route.name === 'Generate') {
+            iconName = isFocused ? 'sparkles' : 'sparkles-outline';
+            label = 'Create'; // Custom label
+          } else if (route.name === 'Saved') {
+            iconName = isFocused ? 'bookmark' : 'bookmark-outline';
+          } else { // Settings
+            iconName = isFocused ? 'person' : 'person-outline';
+          }
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              onPress={onPress}
+              style={styles.tabButton}
+            >
+              <View style={[styles.tabButtonInner, isFocused && styles.tabButtonActive]}>
+                <Ionicons
+                  name={iconName}
+                  size={22}
+                  color={isFocused ? '#FFFFFF' : '#250243'}
+                />
+                {isFocused && <Text style={styles.tabLabel}>{label}</Text>}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </BlurView>
+    </View>
+  );
+};
+
+// --- END OF NEW CUSTOM TAB BAR COMPONENT ---
+
 const Tabs = () => {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Generate" component={HomeScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="Saved" component={SavedPromptsScreen} options={{ title: 'Saved Prompts' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+    // We replace the default tab bar with our custom one
+    <Tab.Navigator tabBar={props => <CustomTabBar {...props} />}>
+      {/* Screens have no options here because we handle it all in the custom component */}
+      <Tab.Screen name="Generate" component={HomeScreen} />
+      <Tab.Screen name="Saved" component={SavedPromptsScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 };
 
-// --- This is the main exported component ---
-// It's a Stack Navigator that has the Tabs as its primary screen
+// The main stack navigator remains the same
 const MainTabNavigator = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen 
-        name="Tabs" 
-        component={Tabs} 
-        options={{ headerShown: false }} // We hide the header for the main tab view
-      />
-      <Stack.Screen 
-        name="PromptDetail" 
-        component={PromptDetailScreen} 
-        options={{ title: 'View Prompt' }} // The detail screen gets a default header
-      />
+      <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+      <Stack.Screen name="PromptDetail" component={PromptDetailScreen} options={{ title: 'View Prompt' }} />
     </Stack.Navigator>
   );
 };
+
+// --- START OF NEW STYLESHEET ---
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 30, // Pushes it up from the bottom
+    left: 20,
+    right: 20,
+    height: 70,
+  },
+  blurView: {
+    flex: 1,
+    borderRadius: 35, // Half of height for a perfect pill shape
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)', // Subtle border for the glass effect
+  },
+  tabButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  tabButtonActive: {
+    backgroundColor: '#7116BC',
+    height: 50,
+  },
+  tabLabel: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Quicksand-Bold',
+    marginLeft: 8,
+  },
+});
+// --- END OF NEW STYLESHEET ---
 
 export default MainTabNavigator;
