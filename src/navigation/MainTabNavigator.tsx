@@ -11,14 +11,14 @@ import SavedPromptsScreen from '../screens/SavedPromptsScreen';
 import PromptDetailScreen from '../screens/PromptDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-// --- Type Definitions (Unchanged) ---
+// --- Type Definitions 
 export type MainTabParamList = { Generate: undefined; Saved: undefined; Settings: undefined; };
 export type MainStackParamList = { Tabs: undefined; PromptDetail: { prompt: any }; };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
-// --- START OF NEW CUSTOM TAB BAR COMPONENT ---
+
 
 const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
   return (
@@ -71,13 +71,13 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
   );
 };
 
-// --- END OF NEW CUSTOM TAB BAR COMPONENT ---
-
 const Tabs = () => {
   return (
-    // We replace the default tab bar with our custom one
-    <Tab.Navigator tabBar={props => <CustomTabBar {...props} />}>
-      {/* Screens have no options here because we handle it all in the custom component */}
+    // We add the screenOptions prop here to hide the header for all tab screens
+    <Tab.Navigator
+      tabBar={props => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
       <Tab.Screen name="Generate" component={HomeScreen} />
       <Tab.Screen name="Saved" component={SavedPromptsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-// --- END OF NEW STYLESHEET ---
+
 
 export default MainTabNavigator;
