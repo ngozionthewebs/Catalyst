@@ -6,12 +6,9 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-
-// Firebase imports
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { BlurView } from 'expo-blur'; // Import the BlurView
+import { BlurView } from 'expo-blur';
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -25,16 +22,9 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       return;
     }
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists() && userDoc.data().hasCompletedOnboarding === true) {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
-      }
+      // The only job is to sign in. The AppNavigator will handle the rest.
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful, AppNavigator will now take over.');
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
@@ -46,7 +36,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 
   return (
     <ImageBackground
-      source={require('../../assets/images/2.png')} // Use the same background image
+      source={require('../../assets/images/2.png')}
       resizeMode="cover"
       style={styles.background}
     >
@@ -64,7 +54,6 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
           </View>
 
           <View style={styles.formContainer}>
-            {/* Email Input */}
             <BlurView intensity={50} tint="light" style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -77,7 +66,6 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
               />
             </BlurView>
 
-            {/* Password Input */}
             <BlurView intensity={50} tint="light" style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -106,7 +94,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   );
 };
 
-// We use the same style structure, with minor text changes for clarity
+// Styles 
 const styles = StyleSheet.create({
   background: {
     flex: 1,

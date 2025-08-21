@@ -12,8 +12,7 @@ const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any
   // We initialise it with the prompt's existing note, or an empty string if there isn't one.
   const [note, setNote] = useState(prompt.note || '');
 
-  // Placeholder function for the Update logic.
-  // This function updates the 'note' field for the current prompt in Firestore.
+  // (UPDATE) This function updates the 'note' field for the current prompt in Firestore.
   const handleUpdateNote = async () => {
     // Gets the currently logged-in user.
     const user = auth.currentUser;
@@ -41,7 +40,7 @@ const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any
     }
   };
 
-  // This function deletes the current prompt from Firestore after user confirmation.
+  // (DELETE) This function deletes the current prompt from Firestore after user confirmation.
   const handleDeletePrompt = () => {
     // Alert.alert shows a native confirmation dialog.
     // This is a critical step to prevent accidental deletions.

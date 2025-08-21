@@ -43,16 +43,13 @@ const DisciplineScreen = ({ navigation }: DisciplineScreenProps) => {
         // Saves the data to Firestore.
         // `setDoc` with `{ merge: true }` will create or update the document
         // without deleting other existing fields.
+        // We only save the disciplines here. Onboarding is NOT yet complete.
         await setDoc(userDocRef, {
-          disciplines: selectedDisciplines,   // Save the array of choices.
-          hasCompletedOnboarding: true,   // Set the onboarding flag to true.
-          email: user.email,                // Also a good idea to save the email for reference.
+          disciplines: selectedDisciplines,
+          email: user.email,
         }, { merge: true });
 
-        console.log('User profile updated successfully!');
-
-        // Navigates to the final onboarding step.
-        navigation.navigate('HowItWorks');
+        navigation.navigate('HowItWorks'); // This is still correct
 
       } catch (error) {
         console.error("Error updating user profile: ", error);

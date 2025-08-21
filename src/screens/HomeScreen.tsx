@@ -12,7 +12,7 @@ const HomeScreen = () => {
   // New state to cache the fetched prompts to avoid re-fetching constantly.
   const [promptCache, setPromptCache] = useState<{ [key: string]: string[] }>({});
 
-  // Fetches the user's disciplines from Firestore when the component mounts.
+  // (READ USER PROFILE) Fetches the user's disciplines from Firestore when the component mounts.
   useEffect(() => {
     const fetchUserDisciplines = async () => {
       const user = auth.currentUser;
@@ -28,7 +28,7 @@ const HomeScreen = () => {
     fetchUserDisciplines();
   }, []);
 
-  // This is our new, database-driven prompt generator.
+  // (READ FROM PROMPTS COLLECTION) This is our new, database-driven prompt generator.
   const generatePrompt = async () => {
     // Checks if we have the user's disciplines first.
     if (userDisciplines.length === 0) {
@@ -73,7 +73,7 @@ const HomeScreen = () => {
     }
   };
 
-  // The shake listener remains the same, but it will now call our new async generatePrompt function.
+  // (SHAKE T0 Generate) The shake listener remains the same, but it will now call our new async generatePrompt function.
   useEffect(() => {
     const SHAKE_THRESHOLD = 1.8;
     let lastShakeTime = 0;

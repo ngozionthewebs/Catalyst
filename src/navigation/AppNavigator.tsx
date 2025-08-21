@@ -2,22 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { auth } from '../firebase';
+// Firebase imports
+import { auth, db } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-// Import all screens
-import SplashScreen from '../screens/SplashScreen'; // The new splash screen
+// Screen imports
+import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-import LoadingScreen from '../screens/LoadingScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import DisciplineScreen from '../screens/DisciplineScreen';
 import HowItWorksScreen from '../screens/HowItWorksScreen';
 import MainTabNavigator from './MainTabNavigator';
 
-// Define all possible screens
 export type RootStackParamList = {
-  Splash: undefined;
   Login: undefined;
   SignUp: undefined;
   Welcome: undefined;
@@ -28,18 +27,18 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// --- Navigator for the Authentication Flow ---
-const AuthStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+// --- Navigator for users who are LOGGED OUT or need to ONBOARD ---
+const AuthStack = ({ initialRouteName }: { initialRouteName: keyof RootStackParamList }) => (
+  <Stack.Navigator initialRouteName={initialRouteName}>
     <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Discipline" component={DisciplineScreen} options={{ headerShown: false }} />
     <Stack.Screen name="HowItWorks" component={HowItWorksScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
-// --- Navigator for the Main App Flow ---
+// --- Navigator for users who are LOGGED IN and ONBOARDED ---
 const AppStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
@@ -47,36 +46,75 @@ const AppStack = () => (
 );
 
 const AppNavigator = () => {
-  const [user, setUser] = useState<User | null>(null);
-  // This state now tracks the combined loading of fonts AND our minimum splash time.
-  const [isAppReady, setIsAppReady] = useState(false); 
+  const [isAppReady, setIsAppReady] = useState(false);
+  // This state now determines which stack to show and where to start inside it.
+  const [initialRoute, setInitialRoute] = useState<'Login' | 'Main' | 'Welcome'>('Login');
 
   useEffect(() => {
-    // This listener checks for the user's login state.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // This is a more complex setup, so we define a variable for our Firestore listener
+    let firestoreUnsubscribe: () => void;
+
+    // The main auth listener remains
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      // If a previous Firestore listener is active, unsubscribe from it first
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+      }
+
+      if (user) {
+        // If a user is logged in, we now set up a REAL-TIME listener on their document
+        const userDocRef = doc(db, 'users', user.uid);
+        
+        firestoreUnsubscribe = onSnapshot(userDocRef, (doc) => {
+          // This code runs immediately, AND every time the document changes
+          if (doc.exists() && doc.data().hasCompletedOnboarding) {
+            // User is fully onboarded
+            setInitialRoute('Main');
+          } else {
+            // User is new or hasn't finished onboarding
+            setInitialRoute('Welcome');
+          }
+        }, (error) => {
+          console.error("Error listening to user document:", error);
+          // If there's an error (e.g., permissions), default to onboarding
+          setInitialRoute('Welcome');
+        });
+
+      } else {
+        // No user is logged in
+        setInitialRoute('Login');
+      }
     });
 
-    // We set a timer to ensure the splash screen is visible for at least 3 seconds.
+    // The splash screen timer remains
     setTimeout(() => {
-      setIsAppReady(true); // After 3 seconds, we declare the app "ready".
-    }, 5000); // 3000 milliseconds = 3 seconds
+      setIsAppReady(true);
+    }, 5000);
 
-    // Cleanup the auth listener when the component unmounts.
-    return unsubscribe;
+    // The cleanup function now needs to unsubscribe from both listeners
+    return () => {
+      authUnsubscribe();
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+      }
+    };
   }, []);
 
-  // While the app is NOT ready, show the splash screen.
   if (!isAppReady) {
     return <SplashScreen />;
   }
 
-  // Once the app is ready, render the correct navigator.
-  return (
-    <NavigationContainer>
-      {user ? <AppStack /> : <AuthStack />}
+
+return (
+
+    <NavigationContainer key={initialRoute}>
+      {initialRoute === 'Main' ? (
+        <AppStack />
+      ) : (
+        <AuthStack initialRouteName={initialRoute} />
+      )}
     </NavigationContainer>
   );
-};
+}
 
 export default AppNavigator;

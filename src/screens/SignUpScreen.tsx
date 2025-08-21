@@ -6,24 +6,19 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { BlurView } from 'expo-blur'; // Import the BlurView for glassmorphism
+import { BlurView } from 'expo-blur';
+import { doc, setDoc } from 'firebase/firestore';
 
 type SignUpScreenProps = NativeStackScreenProps<RootStackParamList, 'SignUp'>;
 
 const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
-  // Add a new state for the user's name
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // We are not implementing the password visibility toggle or social auth in this step
-  // to keep the focus on styling and core functionality.
-
   const handleSignUp = async () => {
-    // Add name to the validation check
     if (!name || !email || !password) {
       Alert.alert('Missing Information', 'Please fill in all fields.');
       return;
@@ -31,19 +26,22 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // After creating the user, update their profile with the name
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, { displayName: name });
-      }
+      const user = userCredential.user;
       
-      console.log('SUCCESS: User account created!', userCredential.user.email);
-      navigation.reset({
-          index: 0,
-          routes: [{ name: 'Welcome' }],
+      await updateProfile(user, { displayName: name });
+
+      // Create their initial profile in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        email: user.email,
+        displayName: name,
+        hasCompletedOnboarding: false, // CRUCIAL: Set onboarding to false for new users
       });
 
+      console.log('SUCCESS: User account created! AppNavigator will handle routing.');
+      // NO navigation.reset() here. Let the central navigator handle it.
+
     } catch (error: any) {
-        // ... (error handling remains the same)
         if (error.code === 'auth/email-already-in-use') {
             Alert.alert('Sign Up Failed', 'That email address is already in use!');
         } else if (error.code === 'auth/invalid-email') {
