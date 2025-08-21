@@ -1,26 +1,29 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Button, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  Alert, ImageBackground, StatusBar
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
-// Import our configured services and the necessary firestore functions.
+// Firebase and BlurView imports
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { BlurView } from 'expo-blur';
 
-// Define the correct props for type-safety with navigation.
+// Reusable Progress Bar
+import OnboardingProgressBar from '../components/OnboardingProgressBar';
+
 type DisciplineScreenProps = NativeStackScreenProps<RootStackParamList, 'Discipline'>;
 
 const DisciplineScreen = ({ navigation }: DisciplineScreenProps) => {
-  // An array containing all the disciplines.
   const disciplines = [
     'Writer', 'Journalist', 'Artist', 'Illustrator', 'Potter',
     'Designer', 'Developer', 'Hobbyist', 'Product Designer'
   ];
 
-  // State to hold the array of selected disciplines.
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
 
-  // Toggles a discipline's selection status.
   const handleToggleDiscipline = (discipline: string) => {
     if (selectedDisciplines.includes(discipline)) {
       setSelectedDisciplines(prev => prev.filter(item => item !== discipline));
@@ -29,122 +32,165 @@ const DisciplineScreen = ({ navigation }: DisciplineScreenProps) => {
     }
   };
 
-  // Saves the user's choices to Firestore and completes onboarding.
   const handleConfirmSelection = async () => {
-    // Gets the currently logged-in user.
     const user = auth.currentUser;
-
-    // Checks if the user object exists before proceeding.
     if (user) {
       try {
-        // Creates a reference to this user's specific document in the 'users' collection.
         const userDocRef = doc(db, 'users', user.uid);
-
-        // Saves the data to Firestore.
-        // `setDoc` with `{ merge: true }` will create or update the document
-        // without deleting other existing fields.
-        // We only save the disciplines here. Onboarding is NOT yet complete.
+        // We only save the disciplines here, not the onboarding flag yet.
         await setDoc(userDocRef, {
           disciplines: selectedDisciplines,
           email: user.email,
         }, { merge: true });
-
-        navigation.navigate('HowItWorks'); // This is still correct
-
+        navigation.navigate('HowItWorks');
       } catch (error) {
         console.error("Error updating user profile: ", error);
         Alert.alert('Error', 'Could not save your preferences. Please try again.');
       }
-    } else {
-      // This is a failsafe in case the user is somehow not logged in.
-      Alert.alert('Error', 'No user is currently logged in.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>What Are Your Creative Fields?</Text>
-      <Text style={styles.subtitle}>Select one or more to get tailored prompts.</Text>
-      
-      <ScrollView contentContainerStyle={styles.pillsContainer}>
-        {disciplines.map((item) => {
-          const isSelected = selectedDisciplines.includes(item);
-          return (
-            <TouchableOpacity
-              key={item}
-              style={[styles.pill, isSelected && styles.pillSelected]}
-              onPress={() => handleToggleDiscipline(item)}
-            >
-              <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-                {item}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+    <ImageBackground
+      source={require('../../assets/images/3.png')} // Using your new background
+      resizeMode="cover"
+      style={styles.background}
+    >
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        {/* The Progress Bar (Step 2 of 3) */}
+        <OnboardingProgressBar step={2} />
+        
+        <View style={styles.header}>
+          <Text style={styles.title}>Select the role {'\n'} that fits you best</Text>
+          <Text style={styles.subtitle}>
+            Before we start generating prompts we need to find out more about you to cater your {'\n'}experience a little more!
+          </Text>
+        </View>
+        
+        <ScrollView contentContainerStyle={styles.pillsContainer}>
+          {disciplines.map((item) => {
+            const isSelected = selectedDisciplines.includes(item);
+            return (
+              // We wrap the TouchableOpacity in the BlurView for the glass effect
+              <BlurView
+                key={item}
+                intensity={80}
+                tint="light"
+                style={[
+                  styles.pillContainer,
+                  isSelected && styles.pillSelectedContainer
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.pill}
+                  onPress={() => handleToggleDiscipline(item)}
+                >
+                  <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              </BlurView>
+            );
+          })}
+        </ScrollView>
 
-      <View style={styles.confirmButtonContainer}>
-        <Button
-          title="Confirm"
-          onPress={handleConfirmSelection}
-          disabled={selectedDisciplines.length === 0}
-        />
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.continueButton, selectedDisciplines.length === 0 && styles.disabledButton]}
+            onPress={handleConfirmSelection}
+            disabled={selectedDisciplines.length === 0}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 };
+
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    paddingTop: 80,
-    paddingHorizontal: 20,
-    backgroundColor: '#f5f5f5',
+    justifyContent: 'space-between',
+  },
+  header: {
+    marginTop: 40,
+    paddingHorizontal: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 32,
+    color: '#250243',
     textAlign: 'center',
+    paddingBottom: 15,
   },
   subtitle: {
+    fontFamily: 'Quicksand-Regular',
     fontSize: 16,
-    color: 'gray',
+    color: '#250243',
     textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 30,
+    marginTop: 15,
+    lineHeight: 24,
   },
-  // New style for the pill container.
   pillsContainer: {
-    flexDirection: 'row', // Arrange items in a row.
-    flexWrap: 'wrap', // Allow items to wrap to the next line.
-    justifyContent: 'center', // Center the pills.
-  },
-  // Style for an individual pill.
-  pill: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     paddingHorizontal: 20,
-    borderRadius: 20, // This makes it pill-shaped.
-    borderWidth: 1,
-    borderColor: '#ddd',
-    margin: 5, // Add some space around each pill.
+    paddingTop: 50,
   },
-  // Style for a selected pill.
-  pillSelected: {
-    backgroundColor: '#007BFF',
-    borderColor: '#007BFF',
+  pillContainer: {
+    height: 51,
+    borderRadius: 25.5, // Half of height for perfect pill shape
+    margin: 6,
+    overflow: 'hidden', // Crucial for BlurView
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)', // Subtle white border for glass effect
+  },
+  pillSelectedContainer: {
+    borderColor: 'transparent', // No border when selected
+  },
+  pill: {
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 22,
   },
   pillText: {
+    fontFamily: 'Quicksand-Regular',
     fontSize: 16,
-    color: '#333',
+    color: '#250243',
   },
-  // Style for the text of a selected pill.
   pillTextSelected: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Quicksand-Bold',
+    color: '#FFFFFF',
   },
-  // Container to position the confirm button at the bottom.
-  confirmButtonContainer: {
-    paddingVertical: 20,
+  footer: {
+    width: '100%',
+    padding: 24,
+    alignItems: 'center',
+  },
+  continueButton: {
+    backgroundColor: '#7116BC',
+    width: '100%',
+    maxWidth: 340,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 80,
+  },
+  disabledButton: {
+    backgroundColor: '#B885E1', // Lighter purple when disabled
+  },
+  continueButtonText: {
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
   },
 });
 
