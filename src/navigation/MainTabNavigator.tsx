@@ -90,7 +90,7 @@ const MainTabNavigator = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-      <Stack.Screen name="PromptDetail" component={PromptDetailScreen} options={{ title: 'View Prompt' }} />
+      <Stack.Screen name="PromptDetail" component={PromptDetailScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };

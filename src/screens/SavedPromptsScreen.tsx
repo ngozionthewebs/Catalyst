@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  Alert, ImageBackground, SafeAreaView, StatusBar
+} from 'react-native';
 import { useNavigation, useFocusEffect, NavigationProp } from '@react-navigation/native';
 import { auth, db } from '../firebase';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 
 // Define a type for our prompt objects for better code safety.
 export type Prompt = {
@@ -58,62 +63,124 @@ const SavedPromptsScreen = () => {
       }
     }, [])
   );
-
+    const renderPromptCard = ({ item }: { item: Prompt }) => (
+    <BlurView intensity={80} tint="light" style={styles.cardContainer}>
+      <TouchableOpacity
+        style={styles.cardInner}
+        onPress={() => navigation.navigate('PromptDetail', { prompt: item })}
+      >
+        <View style={styles.cardTextContainer}>
+          {/* Note: We will create a title from the first few words of the prompt */}
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {item.promptText.split(' ').slice(0, 4).join(' ')}...
+          </Text>
+          <Text style={styles.cardSubtitle} numberOfLines={2}>
+            {item.promptText}
+          </Text>
+        </View>
+        <View style={styles.editIconContainer}>
+            <Ionicons name="pencil" size={20} color="#7116BC" />
+        </View>
+      </TouchableOpacity>
+    </BlurView>
+  );
   // If the data is still loading, we can show a simple message.
   if (loading) {
-    return <View style={styles.container}><Text>Loading prompts...</Text></View>;
+    return <View style={styles.centered}><Text>Loading prompts...</Text></View>;
   }
 
   return (
-    <View style={styles.container}>
-      {/* If there are no saved prompts, show a helpful message. */}
-      {savedPrompts.length === 0 ? (
-        <Text style={styles.emptyText}>You haven't saved any prompts yet. Go generate some!</Text>
-      ) : (
-        // FlatList is the standard, high-performance way to render lists in React Native.
-        <FlatList
-          data={savedPrompts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.promptCard}
-              // We'll add the navigation to the detail screen here in the next step.
-             onPress={() => navigation.navigate('PromptDetail', { prompt: item })}
-            >
-              <Text style={styles.promptCardText} numberOfLines={2}>{item.promptText}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-    </View>
+    <ImageBackground
+      source={require('../../assets/images/5.png')} // Using your new background
+      resizeMode="cover"
+      style={styles.background}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
+        <Text style={styles.title}>Saved prompts</Text>
+
+        {loading ? (
+          <View style={styles.centered}><Text style={styles.infoText}>Loading...</Text></View>
+        ) : savedPrompts.length === 0 ? (
+          <View style={styles.centered}><Text style={styles.infoText}>You haven't saved any prompts yet.</Text></View>
+        ) : (
+          <FlatList
+            data={savedPrompts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPromptCard}
+            contentContainerStyle={styles.listContentContainer}
+          />
+        )}
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#f5f5f5',
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
+  safeArea: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoText: {
+    fontFamily: 'Quicksand-Regular',
     fontSize: 16,
-    color: 'gray',
+    color: '#250243',
   },
-  promptCard: {
-    backgroundColor: '#fff',
+  title: {
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 35,
+    color: '#250243',
+    paddingHorizontal: 24,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  listContentContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 120, // Add padding to the bottom to avoid the tab bar
+  },
+  cardContainer: {
+    borderRadius: 24,
+    overflow: 'hidden', // Crucial for BlurView
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  cardInner: {
     padding: 20,
-    borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  promptCardText: {
-    fontSize: 16,
+  cardTextContainer: {
+    flex: 1, // Allows text to take up available space
+  },
+  cardTitle: {
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 18,
+    color: '#250243',
+    marginBottom: 8,
+  },
+  cardSubtitle: {
+    fontFamily: 'Quicksand-Regular',
+    fontSize: 14,
+    color: '#250243',
+    lineHeight: 20,
+  },
+  editIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(238, 218, 255, 0.8)', // Semi-transparent light purple
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 15,
   },
 });
 

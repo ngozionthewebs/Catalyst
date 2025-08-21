@@ -1,16 +1,33 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Button, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, StyleSheet, TextInput, ScrollView,
+  Alert, TouchableOpacity, ImageBackground, StatusBar,
+  SafeAreaView // We will use SafeAreaView for top spacing
+} from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { MainStackParamList } from '../navigation/MainTabNavigator';
 import { auth, db } from '../firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 
-// This screen receives the prompt data as a parameter from the navigation.
-const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
-  // Extracts the 'prompt' object from the navigation parameters.
+type PromptDetailScreenProps = NativeStackScreenProps<MainStackParamList, 'PromptDetail'>;
+
+// I've corrected the props destructuring here for better type-safety
+const PromptDetailScreen = ({ route, navigation }: PromptDetailScreenProps) => {
   const { prompt } = route.params;
+  const [note, setNote] = useState(prompt.note || '');
 
   // A new state variable to hold the text for the user's note.
   // We initialise it with the prompt's existing note, or an empty string if there isn't one.
-  const [note, setNote] = useState(prompt.note || '');
+
+    //Create a title from the prompt text for the header
+  useEffect(() => {
+    navigation.setOptions({
+      title: prompt.promptText.split(' ').slice(0, 4).join(' ') + '...',
+    });
+  }, [navigation, prompt]);
+
 
   // (UPDATE) This function updates the 'note' field for the current prompt in Firestore.
   const handleUpdateNote = async () => {
@@ -87,100 +104,163 @@ const PromptDetailScreen = ({ route, navigation }: { route: any, navigation: any
   const isNoteChanged = note !== (prompt.note || '');
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Prompt Display */}
-      <Text style={styles.label}>Prompt</Text>
-      <Text style={styles.promptText}>{prompt.promptText}</Text>
-      
-      {/* Note Input */}
-      <Text style={styles.label}>Your Note</Text>
-      <TextInput
-        style={styles.noteInput}
-        placeholder="Add your thoughts, ideas, or a story sketch here..."
-        value={note}
-        onChangeText={setNote}
-        multiline={true} // Allows the input to have multiple lines.
-      />
+    <ImageBackground
+      source={require('../../assets/images/5.png')}
+      resizeMode="cover"
+      style={styles.background}
+    >
+      {/* SafeAreaView now wraps everything to handle the top notch correctly */}
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
 
-    {/* This section only renders if there IS an original note saved on the prompt */}
-    {prompt.note && (
-      <>
-        <Text style={styles.label}>Your Saved Notes</Text>
-        <View style={styles.savedNoteContainer}>
-          <Text style={styles.savedNoteText}>{prompt.note}</Text>
+        {/* --- START OF NEW HEADER --- */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#250243" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Saved prompt</Text>
+          {/* This is an empty view to balance the flexbox layout */}
+          <View style={{ width: 44 }} />
         </View>
-      </>
-    )}
+        {/* --- END OF NEW HEADER --- */}
 
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* We no longer need the title here as it's in the header */}
+          
+          <BlurView intensity={80} tint="light" style={styles.promptContainer}>
+            <Text style={styles.promptText}>{prompt.promptText}</Text>
+          </BlurView>
+          
+          <Text style={styles.label}>Your Note</Text>
+          <BlurView intensity={80} tint="light" style={styles.noteInputContainer}>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Add your thoughts or ideas here..."
+              placeholderTextColor="rgba(37, 2, 67, 0.56)"
+              value={note}
+              onChangeText={setNote}
+              multiline={true}
+            />
+          </BlurView>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Save Note"
-          onPress={handleUpdateNote}
-          disabled={!isNoteChanged} // The button is disabled if the note hasn't changed.
-        />
-        <View style={styles.deleteButton}>
-          <Button
-            title="Delete Prompt"
-            onPress={handleDeletePrompt}
-            color="#E53935" // A distinct red color for a destructive action.
-          />
-        </View>
-      </View>
-    </ScrollView>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.saveButton, !isNoteChanged && styles.disabledButton]}
+              onPress={handleUpdateNote}
+              disabled={!isNoteChanged}
+            >
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.deleteButton]}
+              onPress={handleDeletePrompt}
+            >
+              <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Delete Prompt</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
-//Stylesheet
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  // New Header styles
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontFamily: 'Quicksand-Bold',
+    fontSize: 22, // Adjusted size for a header title
+    color: '#250243',
+  },
+  // Main content styles
+  scrollContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 50,
   },
   label: {
+    fontFamily: 'Quicksand-Bold',
     fontSize: 16,
-    fontWeight: 'bold',
-    color: 'gray',
-    marginTop: 20,
-    marginBottom: 8,
+    color: '#250243',
+    marginTop: 25,
+    marginBottom: 10,
+  },
+  promptContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   promptText: {
-    fontSize: 22,
-    lineHeight: 30, // Adds some extra space between lines for readability.
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    overflow: 'hidden', // Ensures the background respects the border radius.
+    fontFamily: 'Quicksand-Regular',
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#250243',
+    padding: 20,
+  },
+  noteInputContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   noteInput: {
     fontSize: 16,
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    minHeight: 150, // Gives the user a good amount of space to start writing.
-    textAlignVertical: 'top', // Ensures the text starts from the top on Android.
+    padding: 20,
+    minHeight: 150,
+    textAlignVertical: 'top',
+    fontFamily: 'Quicksand-Regular',
+    color: '#250243',
     lineHeight: 24,
   },
   buttonContainer: {
     marginTop: 40,
+    alignItems: 'center',
+  },
+  button: {
+    width: '100%',
+    maxWidth: 340,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  saveButton: {
+    backgroundColor: '#7116BC',
   },
   deleteButton: {
-    marginTop: 15, // Adds some space between the two buttons.
+    backgroundColor: '#250243',
   },
-    savedNoteContainer: {
-    backgroundColor: '#E9E9E9', // A slightly different background to distinguish it
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-    },
-    savedNoteText: {
+  disabledButton: {
+    backgroundColor: '#B885E1',
+  },
+  buttonText: {
+    fontFamily: 'Quicksand-Bold',
     fontSize: 16,
-    lineHeight: 24,
-    fontStyle: 'italic', // Italicize the note to show it's saved content
-    color: '#555',
-    },
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
 });
 
 export default PromptDetailScreen;
