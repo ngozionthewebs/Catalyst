@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/catalyst-icon.png", 
+      "image": "./assets/catalyst-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#EEDAFF"
     },
@@ -16,18 +16,24 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ngozi.catalyst" 
+      "bundleIdentifier": "com.ngozi.catalyst",
+      "buildNumber": "1" 
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EEDAFF"
       },
-      "package": "com.ngozi.catalyst" 
+      "package": "com.ngozi.catalyst",
+      "versionCode": 1 
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8d7ba289-a56c-4ed5-966d-2263d902683e"
+      }
     }
-
   }
 }
