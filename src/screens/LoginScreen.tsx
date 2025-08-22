@@ -9,6 +9,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { BlurView } from 'expo-blur';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -35,11 +36,9 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/2.png')}
-      resizeMode="cover"
-      style={styles.background}
-    >
+    <View style={styles.background}>
+      <AnimatedBackground imageSource={require('../../assets/images/2.png')} />
+
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -90,7 +89,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 };
 

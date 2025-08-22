@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Import ImageBackground instead of the gradient components
 import { View, Text, StyleSheet, StatusBar, ImageBackground } from 'react-native';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 const SplashScreen = () => {
   const fullTitle = 'Catalyst';
@@ -17,18 +18,19 @@ const SplashScreen = () => {
   }, [displayedTitle]);
 
   return (
-    // We replace the gradient with the ImageBackground component
-    <ImageBackground
-      // Use `require` to specify the path to your image
-      source={require('../../assets/images/1.png')}
-      // Ensure the image covers the entire screen
-      resizeMode="cover"
-      style={styles.container}
-    >
+    // We use a simple View as the main container
+    <View style={styles.container}>
+      {/* The AnimatedBackground component now handles the entire background */}
+      {/* We place it first so it's at the bottom layer */}
+      <AnimatedBackground 
+        imageSource={require('../../assets/images/1.png')} 
+      />
+
+      {/* The rest of the content is rendered on top of the background */}
       <StatusBar barStyle="light-content" />
       <Text style={styles.heading}>{displayedTitle}</Text>
       <Text style={styles.subtext}>(Shake up your creative process.)</Text>
-    </ImageBackground>
+    </View>
   );
 };
 
